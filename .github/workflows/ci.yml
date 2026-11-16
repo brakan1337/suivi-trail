@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Compilation, style et tests
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-${{ hashFiles('mix.lock') }}
+      - run: mix deps.get
+      - name: Aucune dépendance inutile dans mix.lock
+        run: mix deps.unlock --check-unused
+      - name: Compilation, avertissements bloquants
+        run: mix compile --warnings-as-errors
+      - name: Mise en forme
+        run: mix format --check-formatted
+      - name: Tests
+        run: mix test
+      - name: Les feuilles de style et le JavaScript se construisent
+        run: mix assets.build
+        env:
+          MIX_ENV: dev
